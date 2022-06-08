@@ -1,17 +1,15 @@
 {
   "name": "amis",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0-rc.8",
   "description": "一种MIS页面生成工具",
   "main": "lib/index.js",
-  "module": "esm/index.js",
   "scripts": {
     "test": "jest",
     "coverage": "jest --coverage",
     "publish-to-internal": "sh build.sh && sh publish.sh",
     "build": "sh build.sh",
     "prettier": "prettier --write '{src,scss,examples}/**/**/*.{js,jsx,ts,tsx,scss,json}'",
-    "build-schemas": "ts-node -O '{\"target\":\"es6\"}' ../../scripts/build-schemas.ts",
-    "prepublishOnly": "npm run build"
+    "build-schemas": "ts-node -O '{\"target\":\"es6\"}' ../../scripts/build-schemas.ts"
   },
   "repository": {
     "type": "git",
@@ -39,8 +37,8 @@
     ]
   },
   "dependencies": {
-    "amis-core": "^2.0.0-beta.0",
-    "amis-ui": "^2.0.0-beta.0",
+    "amis-core": "*",
+    "amis-ui": "*",
     "ansi-to-react": "^6.1.6",
     "attr-accept": "2.2.2",
     "blueimp-canvastoblob": "2.1.0",
@@ -151,7 +149,8 @@
   "files": [
     "lib",
     "esm",
-    "sdk"
+    "sdk",
+    "schema.json"
   ],
   "jest": {
     "testEnvironment": "jsdom",
@@ -192,5 +191,6 @@
   "peerDependencies": {
     "react": ">=16.8.6",
     "react-dom": ">=16.8.6"
-  }
+  },
+  "gitHead": "6affe8e364da3f1fe062c338237a8d1f0f304866"
 }

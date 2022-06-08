@@ -2,25 +2,25 @@
   "name": "amis-ui",
   "main": "lib/index.js",
   "module": "esm/index.js",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0-rc.8",
   "description": "",
   "scripts": {
     "build": "npm run clean-dist && NODE_ENV=production rollup -c ",
     "dev": "rollup -c -w",
     "test": "jest",
     "coverage": "jest --coverage",
-    "clean-dist": "rimraf lib/* esm/*",
-    "prepublishOnly": "npm run build"
+    "clean-dist": "rimraf lib/* esm/*"
   },
   "author": "fex",
   "license": "Apache-2.0",
   "files": [
     "lib",
-    "esm"
+    "esm",
+    "scss"
   ],
   "dependencies": {
-    "amis-core": "^2.0.0-beta.0",
-    "amis-formula": "^2.0.0-beta.0",
+    "amis-core": "*",
+    "amis-formula": "*",
     "classnames": "2.3.1",
     "codemirror": "^5.63.0",
     "downshift": "6.1.7",
@@ -30,6 +30,8 @@
     "jsbarcode": "^3.11.5",
     "keycode": "^2.2.1",
     "lodash": "^4.17.15",
+    "markdown-it": "^12.0.6",
+    "markdown-it-html5-media": "^0.7.1",
     "match-sorter": "^6.3.1",
     "mobx": "^4.5.0",
     "mobx-react": "^6.3.1",
@@ -39,9 +41,7 @@
     "prop-types": "^15.6.1",
     "rc-input-number": "^7.3.4",
     "rc-progress": "^3.1.4",
-    "react": "^18.0.0",
     "react-color": "^2.19.3",
-    "react-dom": "^18.0.0",
     "react-hook-form": "7.30.0",
     "react-json-view": "1.21.3",
     "react-overlays": "5.1.1",
@@ -81,6 +81,10 @@
     "ts-jest": "^28.0.3",
     "typescript": "^4.6.4"
   },
+  "peerDependencies": {
+    "react": ">=16.8.6",
+    "react-dom": ">=16.8.6"
+  },
   "jest": {
     "testEnvironment": "jsdom",
     "collectCoverageFrom": [
@@ -115,5 +119,6 @@
         "diagnostics": false
       }
     }
-  }
+  },
+  "gitHead": "6affe8e364da3f1fe062c338237a8d1f0f304866"
 }

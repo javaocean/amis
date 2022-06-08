@@ -20,7 +20,8 @@ import {
   defaultOptions,
   addSchemaFilter,
   RendererProps,
-  extendDefaultEnv
+  extendDefaultEnv,
+  RendererConfig
 } from './factory';
 import './renderers/builtin';
 export * from './utils/index';
@@ -61,6 +62,7 @@ import FormItem, {
   FormBaseControl,
   FormControlProps,
   FormItemWrap,
+  FormItemProps,
   registerFormItem
 } from './renderers/Item';
 import {
@@ -100,6 +102,7 @@ export {
   RegisterStore,
   FormItem,
   FormItemWrap,
+  FormItemProps,
   OptionsControl,
   FormRenderer,
   FormHorizontal,
@@ -153,7 +156,8 @@ export {
   FormControlProps,
   FormBaseControl,
   extendDefaultEnv,
-  addRootWrapper
+  addRootWrapper,
+  RendererConfig
 };
 
 export function render(
