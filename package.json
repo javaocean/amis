@@ -12,12 +12,20 @@
     "stop": "fis3 server stop",
     "dev": "fis3 release -cwd ./public",
     "deploy-gh-page": "sh ./deploy-gh-pages.sh",
+    "build": "npm run build --workspaces",
     "test": "npm test --workspaces",
+    "update-snapshot": "npm run update-snapshot --workspaces",
     "prepare": "husky install",
     "coverage": "jest --coverage",
     "version": "lerna version",
-    "release": "npm run build --workspaces && lerna publish from-package --registry=https://registry.npmjs.org",
+    "release": "npm run build --workspaces && lerna publish from-package --registry=https://registry.npmjs.org --ignore-scripts",
     "publish-to-internal": "sh ./publish-to-internal.sh"
+  },
+  "dependencies": {
+    "marked": "^4.0.16",
+    "postcss": "^8.4.14",
+    "prismjs": "^1.28.0",
+    "qs": "6.9.7"
   },
   "devDependencies": {
     "@types/jest": "^28.1.0",

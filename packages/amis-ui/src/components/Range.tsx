@@ -11,7 +11,7 @@ import difference from 'lodash/difference';
 import React from 'react';
 import {uncontrollable} from 'amis-core';
 
-import Overlay from './Overlay';
+import {Overlay} from 'amis-core';
 import type {ThemeProps} from 'amis-core';
 import {themeable} from 'amis-core';
 import {autobind, camel} from 'amis-core';
@@ -66,6 +66,9 @@ interface LabelProps extends ThemeProps {
   positionLeft?: number;
   positionTop?: number;
 }
+
+// 小数或者整数
+const MARKS_REG = /^[0-9]+(\.?[0-9]+)?%$/;
 
 /**
  * 滑块值 -> position.left
@@ -324,6 +327,10 @@ export class Range extends React.Component<RangeItemProps, any> {
       return;
     }
     const result = stripNumber(this.getStepValue(value, step));
+    // 值相同 不更新
+    if (result === originValue) {
+      return;
+    }
     if (multiple) {
       this.updateValue({...(originValue as MultipleValue), [type]: result});
     } else {
@@ -434,10 +441,11 @@ export class Range extends React.Component<RangeItemProps, any> {
   @autobind
   getOffsetLeft(value: number | string) {
     const {max, min} = this.props;
-    if (isString(value) && /^\d+%$/.test(value)) {
+    if (isString(value) && MARKS_REG.test(value)) {
       return value;
     }
-    return (+value * 100) / (max - min) + '%';
+    value = Math.min(Math.max(+value, min), max);
+    return ((value - min) * 100) / (max - min) + '%';
   }
 
   render() {
@@ -541,14 +549,14 @@ export class Range extends React.Component<RangeItemProps, any> {
             <div className={cx('InputRange-marks')}>
               {keys(marks).map((key: keyof MarksType) => {
                 const offsetLeft = this.getOffsetLeft(key);
-                if (/^\d+%$/.test(offsetLeft)) {
+                if (MARKS_REG.test(offsetLeft)) {
                   return (
                     <div key={key} style={{left: offsetLeft}}>
                       <span style={(marks[key] as any)?.style}>
                         {(marks[key] as any)?.label || marks[key]}
                       </span>
                     </div>
-                  )
+                  );
                 } else {
                   return null;
                 }

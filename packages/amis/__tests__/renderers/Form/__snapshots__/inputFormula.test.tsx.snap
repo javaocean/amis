@@ -45,7 +45,9 @@ exports[`Renderer:input-formula 1`] = `
                   type="submit"
                 />
                 <pre>
-                  <code>
+                  <code
+                    class="cxd-Form--debug"
+                  >
                     {
   "formula": "SUM(1 + 2)"
 }
@@ -75,11 +77,19 @@ exports[`Renderer:input-formula 1`] = `
                       class="cxd-ResultBox cxd-FormulaPicker-input cxd-ResultBox--borderFull"
                       tabindex="-1"
                     >
-                      <input
-                        placeholder="暂无数据"
-                        theme="cxd"
-                        type="text"
-                        value="SUM(1 + 2)"
+                      <div
+                        class="cxd-ResultBox-value-wrap"
+                      >
+                        <input
+                          class="cxd-ResultBox-value-input"
+                          placeholder="暂无数据"
+                          theme="cxd"
+                          type="text"
+                          value="SUM(1 + 2)"
+                        />
+                      </div>
+                      <div
+                        class="cxd-ResultBox-actions"
                       />
                     </div>
                     <button
@@ -203,7 +213,9 @@ exports[`Renderer:input-formula button 1`] = `
                   type="submit"
                 />
                 <pre>
-                  <code>
+                  <code
+                    class="cxd-Form--debug"
+                  >
                     {
   "formula": "SUM(1 + 2)"
 }
@@ -355,7 +367,9 @@ exports[`Renderer:input-formula input-group 1`] = `
                   type="submit"
                 />
                 <pre>
-                  <code>
+                  <code
+                    class="cxd-Form--debug"
+                  >
                     {
   "formula": "SUM(1 + 2)"
 }
@@ -385,11 +399,19 @@ exports[`Renderer:input-formula input-group 1`] = `
                       class="cxd-ResultBox cxd-FormulaPicker-input cxd-ResultBox--borderFull"
                       tabindex="-1"
                     >
-                      <input
-                        placeholder="暂无数据"
-                        theme="cxd"
-                        type="text"
-                        value="SUM(1 + 2)"
+                      <div
+                        class="cxd-ResultBox-value-wrap"
+                      >
+                        <input
+                          class="cxd-ResultBox-value-input"
+                          placeholder="暂无数据"
+                          theme="cxd"
+                          type="text"
+                          value="SUM(1 + 2)"
+                        />
+                      </div>
+                      <div
+                        class="cxd-ResultBox-actions"
                       />
                     </div>
                     <a

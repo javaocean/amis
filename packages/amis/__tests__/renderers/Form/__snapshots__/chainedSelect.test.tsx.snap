@@ -33,7 +33,9 @@ exports[`Renderer:chained-select 1`] = `
           type="submit"
         />
         <pre>
-          <code>
+          <code
+            class="cxd-Form--debug"
+          >
             {
   "select3": "a,b"
 }
@@ -99,7 +101,7 @@ exports[`Renderer:chained-select 1`] = `
                 <div
                   class="cxd-Select-value"
                 >
-                  B 0
+                  B 1
                 </div>
               </div>
               <span

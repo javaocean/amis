@@ -303,7 +303,6 @@
       .#{$ns}Form-itemColumn--align-right {
         text-align: right;
       }
-
     }
 
     &--inline {
@@ -386,6 +385,11 @@
       // }
     }
   }
+}
+
+.#{$ns}Form--debug {
+  word-break: break-all;
+  white-space: pre-wrap;
 }
 
 .#{$ns}Form--quickEdit {

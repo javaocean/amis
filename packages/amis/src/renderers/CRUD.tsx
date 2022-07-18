@@ -490,8 +490,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
     // 另外autoGenerateFilter时，table 里面会单独处理这块逻辑
     // 所以这里应该忽略 autoGenerateFilter 情况
     if (
-      (!this.props.filter || (store.filterTogggable && !store.filterVisible)) &&
-      !autoGenerateFilter
+      (!this.props.filter && !autoGenerateFilter) ||
+      (store.filterTogggable && !store.filterVisible)
     ) {
       this.handleFilterInit({});
     }
@@ -670,7 +670,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
             throw e;
           }
         });
-    } else if (action.actionType === 'reload') {
+    } else if (action.actionType === 'reload' && !action.target) {
       this.reload();
     } else if (
       pickerMode &&
@@ -723,6 +723,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       ...selectedItems[0],
       rows: selectedItems,
       items: selectedItems,
+      selectedItems,
       unSelectedItems: unSelectedItems,
       ids
     });
@@ -774,7 +775,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       }
     };
 
-    if (action.confirmText && env.confirm) {
+    // Action如果配了事件动作也会处理二次确认，这里需要处理一下忽略
+    if (!action.ignoreConfirm && action.confirmText && env.confirm) {
       env
         .confirm(filter(action.confirmText, ctx))
         .then((confirmed: boolean) => confirmed && fn());
@@ -2067,6 +2069,7 @@ export default class CRUD extends React.Component<CRUDProps, any> {
       autoGenerateFilter,
       onSelect,
       autoFillHeight,
+      onEvent,
       ...rest
     } = this.props;
 
@@ -2160,8 +2163,8 @@ export default class CRUD extends React.Component<CRUDProps, any> {
             loading: store.loading
           }
         )}
-
-        <Spinner overlay size="lg" key="info" show={store.loading} />
+        {/* spinner可以交给孩子处理 */}
+        {/* <Spinner overlay size="lg" key="info" show={store.loading} /> */}
 
         {render(
           'dialog',

@@ -1,7 +1,7 @@
 import React from 'react';
 import {AsideNav, Html, NotFound, Spinner} from 'amis-ui';
 import {Layout} from 'amis-ui';
-import {Renderer, RendererProps} from 'amis-core';
+import {Renderer, RendererProps, replaceText} from 'amis-core';
 import {
   BaseSchema,
   SchemaApi,
@@ -131,6 +131,18 @@ export interface AppSchema extends BaseSchema {
    * css 类名。
    */
   className?: SchemaClassName;
+  /**
+   * 显示面包屑路径。
+   */
+  showBreadcrumb?: boolean;
+  /**
+   * 显示面包屑完整路径。
+   */
+  showFullBreadcrumbPath?: boolean;
+  /**
+   * 显示面包屑首页路径。
+   */
+  showBreadcrumbHomePath?: boolean;
 }
 
 export interface AppProps
@@ -158,11 +170,21 @@ export default class App extends React.Component<AppProps, object> {
 
     const store = props.store;
     store.syncProps(props, undefined, ['pages']);
-    store.updateActivePage(props.env);
+    store.updateActivePage(
+      Object.assign({}, props.env ?? {}, {
+        showFullBreadcrumbPath: props.showFullBreadcrumbPath ?? false,
+        showBreadcrumbHomePath: props.showBreadcrumbHomePath ?? true
+      })
+    );
 
     if (props.env.watchRouteChange) {
       this.unWatchRouteChange = props.env.watchRouteChange(() =>
-        store.updateActivePage(props.env)
+        store.updateActivePage(
+          Object.assign({}, props.env ?? {}, {
+            showFullBreadcrumbPath: props.showFullBreadcrumbPath ?? false,
+            showBreadcrumbHomePath: props.showBreadcrumbHomePath ?? true
+          })
+        )
       );
     }
   }
@@ -180,7 +202,12 @@ export default class App extends React.Component<AppProps, object> {
     if (isApiOutdated(prevProps.api, props.api, prevProps.data, props.data)) {
       this.reload();
     } else if (props.location && props.location !== prevProps.location) {
-      store.updateActivePage(props.env);
+      store.updateActivePage(
+        Object.assign({}, props.env ?? {}, {
+          showFullBreadcrumbPath: props.showFullBreadcrumbPath ?? false,
+          showBreadcrumbHomePath: props.showBreadcrumbHomePath ?? true
+        })
+      );
     }
   }
 
@@ -193,13 +220,28 @@ export default class App extends React.Component<AppProps, object> {
       return this.receive(query);
     }
 
-    const {api, store, env} = this.props;
+    const {
+      api,
+      store,
+      env,
+      showFullBreadcrumbPath = false,
+      showBreadcrumbHomePath = true
+    } = this.props;
 
     if (isEffectiveApi(api, store.data)) {
       const json = await store.fetchInitData(api, store.data, {});
+      if (env.replaceText) {
+        replaceText(json.data, env.replaceText, env.replaceTextIgnoreKeys);
+      }
+
       if (json?.data.pages) {
         store.setPages(json.data.pages);
-        store.updateActivePage(env);
+        store.updateActivePage(
+          Object.assign({}, env ?? {}, {
+            showFullBreadcrumbPath,
+            showBreadcrumbHomePath
+          })
+        );
       }
     }
   }
@@ -352,7 +394,14 @@ export default class App extends React.Component<AppProps, object> {
   }
 
   render() {
-    const {className, size, classnames: cx, store, render} = this.props;
+    const {
+      className,
+      size,
+      classnames: cx,
+      store,
+      render,
+      showBreadcrumb = true
+    } = this.props;
 
     return (
       <Layout
@@ -364,7 +413,7 @@ export default class App extends React.Component<AppProps, object> {
       >
         {store.activePage && store.schema ? (
           <>
-            {store.bcn.length ? (
+            {showBreadcrumb && store.bcn.length ? (
               <ul className={cx('AppBcn')}>
                 {store.bcn.map((item: any, index: number) => {
                   return (
@@ -373,6 +422,8 @@ export default class App extends React.Component<AppProps, object> {
                         <a href={item.path} onClick={this.handleNavClick}>
                           {item.label}
                         </a>
+                      ) : index !== store.bcn.length - 1 ? (
+                        <a>{item.label}</a>
                       ) : (
                         item.label
                       )}

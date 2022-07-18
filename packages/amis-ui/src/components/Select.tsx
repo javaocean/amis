@@ -9,9 +9,10 @@ import {uncontrollable} from 'amis-core';
 import React from 'react';
 import isInteger from 'lodash/isInteger';
 import omit from 'lodash/omit';
+import merge from 'lodash/merge';
 import VirtualList from './virtual-list';
-import Overlay from './Overlay';
-import PopOver from './PopOver';
+import {Overlay} from 'amis-core';
+import {PopOver} from 'amis-core';
 import TooltipWrapper from './TooltipWrapper';
 import Downshift, {ControllerStateAndHelpers} from 'downshift';
 import {closeIcon, Icon} from './icons';
@@ -297,6 +298,7 @@ const DownshiftChangeTypes = Downshift.stateChangeTypes;
 interface SelectProps extends OptionProps, ThemeProps, LocaleProps {
   className?: string;
   popoverClassName?: string;
+  showInvalidMatch?: boolean;
   creatable: boolean;
   createBtnLabel: string;
   multiple: boolean;
@@ -330,6 +332,7 @@ interface SelectProps extends OptionProps, ThemeProps, LocaleProps {
   inline: boolean;
   disabled: boolean;
   popOverContainer?: any;
+  popOverContainerSelector?: string;
   overlayPlacement?: string;
   onChange: (value: void | string | Option | Array<Option>) => void;
   onFocus?: Function;
@@ -382,6 +385,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
     multiple: false,
     clearable: true,
     creatable: false,
+    showInvalidMatch: false,
     createBtnLabel: 'Select.createLabel',
     searchPromptText: 'Select.searchPromptText',
     loadingPlaceholder: 'loading',
@@ -413,7 +417,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
       inputValue: '',
       highlightedIndex: -1,
       selection: value2array(props.value, props),
-      itemHeight: 35,
+      itemHeight: 32 /** Select选项高度保持一致 */,
       pickerSelectItem: ''
     };
   }
@@ -726,11 +730,6 @@ export class Select extends React.Component<SelectProps, SelectState> {
     onDelete && onDelete(item);
   }
 
-  @autobind
-  menuItemRef(ref: any) {
-    ref && this.setState({itemHeight: ref.offsetHeight});
-  }
-
   renderValue({inputValue, isOpen}: ControllerStateAndHelpers<any>) {
     const {
       classnames: cx,
@@ -741,6 +740,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
       disabled,
       maxTagCount,
       overflowTagPopover,
+      showInvalidMatch,
       translate: __
     } = this.props;
     const selection = this.state.selection;
@@ -793,7 +793,9 @@ export class Select extends React.Component<SelectProps, SelectState> {
                             key={itemIndex}
                             className={cx('Select-value', {
                               'is-disabled': disabled,
-                              'is-invalid': item.__unmatched
+                              'is-invalid': showInvalidMatch
+                                ? item.__unmatched
+                                : false
                             })}
                           >
                             <span className={cx('Select-valueLabel')}>
@@ -817,7 +819,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
               <div
                 className={cx('Select-value', {
                   'is-disabled': disabled,
-                  'is-invalid': item.__unmatched
+                  'is-invalid': showInvalidMatch ? item.__unmatched : false
                 })}
                 onClick={(e: React.MouseEvent) =>
                   e.stopPropagation()
@@ -841,7 +843,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
             <div
               className={cx('Select-value', {
                 'is-disabled': disabled,
-                'is-invalid': item.__unmatched
+                'is-invalid': showInvalidMatch ? item.__unmatched : false
               })}
             >
               <span className={cx('Select-valueLabel')}>
@@ -867,7 +869,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
           <div
             className={cx('Select-value', {
               'is-disabled': disabled,
-              'is-invalid': item.__unmatched
+              'is-invalid': showInvalidMatch ? item.__unmatched : false
             })}
             key={index}
           >
@@ -890,7 +892,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
           <div
             className={cx('Select-value', {
               'is-disabled': disabled,
-              'is-invalid': item.__unmatched
+              'is-invalid': showInvalidMatch ? item.__unmatched : false
             })}
           >
             <span className={cx('Select-valueLabel')}>
@@ -932,6 +934,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
       valuesNoWrap,
       classnames: cx,
       popoverClassName,
+      popOverContainerSelector,
       checkAll,
       checkAllLabel,
       checkAllBySearch,
@@ -946,7 +949,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
       hideSelected,
       renderMenu,
       mobileClassName,
-      virtualThreshold = 200,
+      virtualThreshold = 100,
       useMobileUI = false
     } = this.props;
     const {selection} = this.state;
@@ -960,7 +963,8 @@ export class Select extends React.Component<SelectProps, SelectState> {
           })
         : options.concat()
     ).filter((option: Option) => !option.hidden && option.visible !== false);
-
+    const enableVirtualRender =
+      filtedOptions.length && filtedOptions.length > virtualThreshold;
     const selectionValues = selection.map(select => select[valueField]);
     if (multiple && checkAll) {
       const optionsValues = (checkAllBySearch ? filtedOptions : options).map(
@@ -1000,7 +1004,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
             item,
             disabled: item.disabled
           })}
-          style={style}
+          style={merge(style, enableVirtualRender ? {width: '100%'} : {})}
           className={cx(`Select-option`, {
             'is-disabled': item.disabled,
             'is-highlight': highlightedIndex === index,
@@ -1058,25 +1062,30 @@ export class Select extends React.Component<SelectProps, SelectState> {
               })
             )
           ) : multiple ? (
-            <Checkbox
-              checked={checked}
-              trueValue={item.value}
-              onChange={() => {
-                this.handleChange(item);
-              }}
-              disabled={item.disabled}
-              size="sm"
+            <div
+              title={item[labelField]}
+              className={cx('Select-option-checkbox')}
             >
-              {item.disabled
-                ? item[labelField]
-                : highlight(
-                    item[labelField],
-                    inputValue as string,
-                    cx('Select-option-hl')
-                  )}
+              <Checkbox
+                checked={checked}
+                trueValue={item.value}
+                onChange={() => {
+                  this.handleChange(item);
+                }}
+                disabled={item.disabled}
+                size="sm"
+              >
+                {item.disabled
+                  ? item[labelField]
+                  : highlight(
+                      item[labelField],
+                      inputValue as string,
+                      cx('Select-option-hl')
+                    )}
 
-              {item.tip}
-            </Checkbox>
+                {item.tip}
+              </Checkbox>
+            </div>
           ) : (
             <span
               className={cx('Select-option-content')}
@@ -1107,8 +1116,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
       <div
         ref={this.menu}
         className={cx('Select-menu', {
-          'Select--longlist':
-            filtedOptions.length && filtedOptions.length > virtualThreshold,
+          'Select--longlist': enableVirtualRender,
           'is-mobile': mobileUI
         })}
       >
@@ -1154,14 +1162,6 @@ export class Select extends React.Component<SelectProps, SelectState> {
           </div>
         ) : null}
 
-        <div ref={this.menuItemRef} className={cx('Select-option hidden')}>
-          {multiple ? (
-            <Checkbox size="sm">Placeholder</Checkbox>
-          ) : (
-            <span>Placeholder</span>
-          )}
-        </div>
-
         {creatable && !disabled ? (
           <a className={cx('Select-addBtn')} onClick={this.handleAddClick}>
             <Icon icon="plus" className="icon" />
@@ -1203,6 +1203,7 @@ export class Select extends React.Component<SelectProps, SelectState> {
     ) : (
       <Overlay
         container={popOverContainer || this.getTarget}
+        containerSelector={popOverContainerSelector}
         target={this.getTarget}
         placement={overlayPlacement}
         show

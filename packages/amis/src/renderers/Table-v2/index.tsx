@@ -7,7 +7,7 @@ import isEqual from 'lodash/isEqual';
 import {ScopedContext, IScopedContext} from 'amis-core';
 import {Renderer, RendererProps} from 'amis-core';
 import {ActionObject} from 'amis-core';
-import {Icon, Table} from 'amis-ui';
+import {Icon, Table, Spinner} from 'amis-ui';
 import {BaseSchema, SchemaObject, SchemaTokenizeableString} from '../../Schema';
 import {
   isObject,
@@ -31,6 +31,7 @@ import {HeadCellSearchDropDown} from './HeadCellSearchDropdown';
 import './TableCell';
 import './ColumnToggler';
 import type {SortProps} from 'amis-ui/lib/components/table';
+import {Action} from '../../types';
 
 /**
  * Table 表格v2渲染器。
@@ -187,6 +188,11 @@ export interface RowSelectionSchema {
 
 export interface ExpandableSchema {
   /**
+   * 对应渲染器类型
+   */
+  type: string;
+
+  /**
    * 对应数据源的key值
    */
   keyField: string;
@@ -231,7 +237,7 @@ export interface TableSchemaV2 extends BaseSchema {
   /**
    * 表格可自定义列
    */
-  columnsTogglable?: boolean;
+  columnsTogglable?: boolean | string | SchemaObject;
 
   /**
    * 表格列配置
@@ -247,11 +253,6 @@ export interface TableSchemaV2 extends BaseSchema {
    * 表格行可展开配置
    */
   expandable?: ExpandableSchema;
-
-  /**
-   * 表格行可展开内容配置
-   */
-  expandableBody?: Array<SchemaObject>;
 
   /**
    * 粘性头部
@@ -331,16 +332,7 @@ export interface TableV2Props extends RendererProps {
   togglable: boolean;
 }
 
-@Renderer({
-  type: 'table-v2',
-  storeType: TableStoreV2.name,
-  name: 'table-v2',
-  isolateScope: true
-})
-export default class TableRenderer extends React.Component<
-  TableV2Props,
-  object
-> {
+export default class TableV2 extends React.Component<TableV2Props, object> {
   static contextType = ScopedContext;
 
   renderedToolbars: Array<string> = [];
@@ -352,17 +344,10 @@ export default class TableRenderer extends React.Component<
     const scoped = context;
     scoped.registerComponent(this);
 
-    this.handleColumnToggle = this.handleColumnToggle.bind(this);
-    this.getPopOverContainer = this.getPopOverContainer.bind(this);
-    this.handleAction = this.handleAction.bind(this);
-    this.handleQuickChange = this.handleQuickChange.bind(this);
-    this.handleSave = this.handleSave.bind(this);
-    this.controlRef = this.controlRef.bind(this);
-
     const {store, columnsTogglable, columns} = props;
 
     store.update({columnsTogglable, columns});
-    TableRenderer.syncRows(store, props, undefined) && this.syncSelected();
+    TableV2.syncRows(store, props, undefined) && this.syncSelected();
   }
 
   componentWillUnmount() {
@@ -370,6 +355,7 @@ export default class TableRenderer extends React.Component<
     scoped.unRegisterComponent(this);
   }
 
+  @autobind
   controlRef(control: any) {
     // 因为 control 有可能被 n 层 hoc 包裹。
     while (control && control.getWrappedInstance) {
@@ -485,7 +471,7 @@ export default class TableRenderer extends React.Component<
         (props.data !== prevProps.data ||
           (typeof props.source === 'string' && isPureVariable(props.source))))
     ) {
-      TableRenderer.syncRows(store, props, prevProps) && this.syncSelected();
+      TableV2.syncRows(store, props, prevProps) && this.syncSelected();
     }
 
     if (!isEqual(prevProps.columns, props.columns)) {
@@ -495,6 +481,7 @@ export default class TableRenderer extends React.Component<
     }
   }
 
+  @autobind
   getPopOverContainer() {
     return findDOMNode(this);
   }
@@ -625,7 +612,7 @@ export default class TableRenderer extends React.Component<
               colIndex: number
             ) => {
               const props: RenderProps = {};
-              const item = store.getRowByIndex(rowIndex);
+              const item = store.getRowByIndex(rowIndex) || {};
               const obj = {
                 children: this.renderCellSchema(column, {
                   data: item.locals,
@@ -782,6 +769,7 @@ export default class TableRenderer extends React.Component<
     scoped.reload(target, data);
   }
 
+  @autobind
   handleSave(
     rows: Array<object> | object,
     diff: Array<object> | object,
@@ -856,6 +844,7 @@ export default class TableRenderer extends React.Component<
     }
   }
 
+  @autobind
   handleQuickChange(
     item: IRowV2,
     values: object,
@@ -911,71 +900,8 @@ export default class TableRenderer extends React.Component<
         );
   }
 
-  async handleColumnToggle(columns: Array<IColumnV2>) {
-    const {dispatchEvent, data, store} = this.props;
-
-    const rendererEvent = await dispatchEvent(
-      'columnToggled',
-      createObject(data, {
-        columns
-      })
-    );
-
-    if (rendererEvent?.prevented) {
-      return;
-    }
-
-    store.update({columns});
-  }
-
-  renderColumnsToggler() {
-    const {
-      className,
-      store,
-      render,
-      classPrefix: ns,
-      classnames: cx,
-      ...rest
-    } = this.props;
-    const __ = rest.translate;
-    const env = rest.env;
-
-    if (!store.toggable) {
-      return null;
-    }
-
-    const children = store.toggableColumns.map((column, index) => (
-      <li
-        className={cx('ColumnToggler-menuItem')}
-        key={'toggable-li-' + index}
-        onClick={column.toggleToggle}
-      >
-        <Checkbox
-          key={'toggable-select' + index}
-          size="sm"
-          classPrefix={ns}
-          checked={column.toggled}
-        >
-          {column.title ? render('tpl', column.title) : null}
-        </Checkbox>
-      </li>
-    ));
-
-    return render(
-      'column-toggler',
-      {
-        type: 'column-toggler'
-      },
-      {
-        isActived: store.hasColumnHidden(),
-        columns: store.columnsData,
-        onColumnToggle: this.handleColumnToggle,
-        children
-      }
-    );
-  }
-
-  handleAction(e: React.UIEvent<any>, action: ActionObject, ctx: object) {
+  @autobind
+  handleAction(e: React.UIEvent<any>, action: Action, ctx: object) {
     const {onAction} = this.props;
 
     // todo
@@ -983,18 +909,46 @@ export default class TableRenderer extends React.Component<
   }
 
   renderActions(region: string) {
-    let {actions, render, store, classnames: cx, data} = this.props;
+    let {
+      actions,
+      render,
+      store,
+      classnames: cx,
+      data,
+      columnsTogglable,
+      $path
+    } = this.props;
+
+    // 如果table是在crud里面，自定义显示列配置在grid里，这里就不需要渲染了
+    const isInCrud = /(?:\/|^)crud2\//.test($path as string);
 
     actions = Array.isArray(actions) ? actions.concat() : [];
 
+    // 现在默认从crud里传进来的columnsTogglable是boolean类型
+    // table单独配置的是SchemaNode类型
     if (
+      !isInCrud &&
       store.toggable &&
       region === 'header' &&
       !~this.renderedToolbars.indexOf('columns-toggler')
     ) {
       actions.push({
         type: 'button',
-        children: this.renderColumnsToggler()
+        children: render(
+          'column-toggler',
+          {
+            ...(isObject(columnsTogglable) ? columnsTogglable : {}),
+            type: 'column-toggler'
+          },
+          {
+            cols: store.columnsData.map(item => item.pristine),
+            toggleAllColumns: () => store.toggleAllColumns(),
+            toggleToggle: (toggled: boolean, index: number) => {
+              const column = store.columnsData[index];
+              column.toggleToggle();
+            }
+          }
+        )
       });
     }
 
@@ -1207,9 +1161,9 @@ export default class TableRenderer extends React.Component<
         delete expandableConfig.expandableOn;
       }
 
-      if (expandableBody && expandableBody.length > 0) {
+      if (expandable && expandable.type) {
         expandableConfig.expandedRowRender = (record: any, rowIndex: number) =>
-          this.renderSchema('expandableBody', expandableBody, {data: record});
+          this.renderSchema('expandableBody', {...expandable}, {data: record});
       }
 
       if (expandable.expandedRowClassNameExpr) {
@@ -1390,7 +1344,7 @@ export default class TableRenderer extends React.Component<
   }
 
   render() {
-    const {classnames: cx} = this.props;
+    const {classnames: cx, loading = false} = this.props;
 
     this.renderedToolbars = []; // 用来记录哪些 toolbar 已经渲染了
 
@@ -1401,7 +1355,37 @@ export default class TableRenderer extends React.Component<
         {this.renderActions('header')}
         {heading}
         {this.renderTable()}
+
+        <Spinner overlay show={loading} />
       </div>
     );
+  }
+}
+
+@Renderer({
+  type: 'table-v2',
+  storeType: TableStoreV2.name,
+  name: 'table-v2',
+  isolateScope: true
+})
+export class TableRenderer extends TableV2 {
+  receive(values: any, subPath?: string) {
+    const scoped = this.context as IScopedContext;
+    const parents = scoped?.parent?.getComponents();
+
+    /**
+     * 因为Table在scope上注册，导致getComponentByName查询组件时会优先找到Table，和CRUD联动的动作都会失效
+     * 这里先做兼容处理，把动作交给上层的CRUD处理
+     */
+    if (Array.isArray(parents) && parents.length) {
+      // CRUD的name会透传给Table，这样可以保证找到CRUD
+      const crud = parents.find(cmpt => cmpt?.props?.name === this.props?.name);
+
+      return crud?.receive?.(values, subPath);
+    }
+
+    if (subPath) {
+      return scoped.send(subPath, values);
+    }
   }
 }

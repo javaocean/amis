@@ -48,6 +48,8 @@ export interface FormHorizontal {
   leftFixed?: boolean | number | 'xs' | 'sm' | 'md' | 'lg';
   justify?: boolean; // 两端对齐
   labelAlign?: 'left' | 'right'; // label对齐方式
+  /** label自定义宽度，默认单位为px */
+  labelWidth?: number | string;
 }
 
 export interface FormSchemaBase {
@@ -282,6 +284,11 @@ export interface FormSchemaBase {
    * 表单label的对齐方式
    */
   labelAlign?: LabelAlign;
+
+  /**
+   * label自定义宽度，默认单位为px
+   */
+  labelWidth?: number | string;
 }
 
 export type FormGroup = FormSchemaBase & {
@@ -915,13 +922,13 @@ export default class Form extends React.Component<FormProps, object> {
     );
   }
 
-  handleAction(
+  async handleAction(
     e: React.UIEvent<any> | void,
     action: ActionObject,
     data: object,
     throwErrors: boolean = false,
     delegate?: IScopedContext
-  ): any {
+  ): Promise<any> {
     const {
       store,
       onSubmit,
@@ -960,26 +967,30 @@ export default class Form extends React.Component<FormProps, object> {
       data = store.data;
     }
     if (Array.isArray(action.required) && action.required.length) {
-      return store.validateFields(action.required).then(async result => {
-        if (!result) {
-          const dispatcher = await dispatchEvent(
-            'validateError',
-            this.props.data
-          );
-          if (!dispatcher?.prevented) {
-            env.notify('error', __('Form.validateFailed'));
-          }
-        } else {
-          dispatchEvent('validateSucc', this.props.data);
-          this.handleAction(
-            e,
-            {...action, required: undefined},
-            data,
-            throwErrors,
-            delegate
-          );
+      /** 如果是按钮指定了required，则校验前先清空一下遗留的校验报错 */
+      store.clearErrors();
+
+      const fields = action.required.map(item => ({
+        name: item,
+        rules: {isRequired: true}
+      }));
+      const validationRes = await store.validateFields(fields);
+
+      if (!validationRes) {
+        const dispatcher = await dispatchEvent(
+          'validateError',
+          this.props.data
+        );
+        if (!dispatcher?.prevented) {
+          env.notify('error', __('Form.validateFailed'));
         }
-      });
+
+        /** 抛异常是为了在dialog中catch这个错误，避免弹窗直接关闭 */
+        return Promise.reject(__('Form.validateFailed'));
+      } else {
+        /** 重置validated状态，保证submit时触发表单中的校验项 */
+        store.clearErrors();
+      }
     }
     if (
       action.type === 'submit' ||
@@ -1441,7 +1452,8 @@ export default class Form extends React.Component<FormProps, object> {
       lazyChange,
       formLazyChange,
       dispatchEvent,
-      labelAlign
+      labelAlign,
+      labelWidth
     } = props;
 
     const subProps = {
@@ -1455,6 +1467,7 @@ export default class Form extends React.Component<FormProps, object> {
       formMode: mode,
       formHorizontal: horizontal,
       formLabelAlign: labelAlign !== 'left' ? 'right' : labelAlign,
+      formLabelWidth: labelWidth,
       controlWidth,
       disabled: disabled || (control as Schema).disabled || form.loading,
       btnDisabled: disabled || form.loading || form.validating,
@@ -1535,7 +1548,9 @@ export default class Form extends React.Component<FormProps, object> {
 
         {debug ? (
           <pre>
-            <code>{JSON.stringify(store.data, null, 2)}</code>
+            <code className={cx('Form--debug')}>
+              {JSON.stringify(store.data, null, 2)}
+            </code>
           </pre>
         ) : null}
 

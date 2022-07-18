@@ -7,7 +7,7 @@ import {
 } from 'amis-core';
 import {Checkbox} from 'amis-ui';
 import {Icon} from 'amis-ui';
-import {ActionObject, Api} from 'amis-core';
+import {ActionObject, Api, createObject} from 'amis-core';
 import {autobind, hasAbility} from 'amis-core';
 import {columnsSplit} from 'amis-core';
 import {FormOptionsSchema} from '../../Schema';
@@ -33,6 +33,11 @@ export interface CheckboxesControlSchema extends FormOptionsSchema {
    * 每行显示多少个
    */
   columnsCount?: number | number[];
+
+  /**
+   * 自定义选项展示
+   */
+  menuTpl?: string;
 }
 
 export interface CheckboxesProps
@@ -56,6 +61,7 @@ export interface CheckboxesProps
   editable?: boolean;
   removable?: boolean;
   optionType?: 'default' | 'button';
+  menuTpl?: string;
 }
 
 export default class CheckboxesControl extends React.Component<
@@ -228,6 +234,7 @@ export default class CheckboxesControl extends React.Component<
     }
 
     const {
+      render,
       itemClassName,
       onToggle,
       selectedOptions,
@@ -238,8 +245,12 @@ export default class CheckboxesControl extends React.Component<
       removable,
       editable,
       translate: __,
-      optionType
+      optionType,
+      menuTpl,
+      data
     } = this.props;
+    const labelText = String(option[labelField || 'label']);
+    const optionLabelClassName = option['labelClassName'];
 
     return (
       <Checkbox
@@ -249,11 +260,15 @@ export default class CheckboxesControl extends React.Component<
         checked={!!~selectedOptions.indexOf(option)}
         disabled={disabled || option.disabled}
         inline={inline}
-        labelClassName={labelClassName}
+        labelClassName={optionLabelClassName || labelClassName}
         description={option.description}
         optionType={optionType}
       >
-        {String(option[labelField || 'label'])}
+        {menuTpl
+          ? render(`checkboxes/${index}`, menuTpl, {
+              data: createObject(data, option)
+            })
+          : labelText}
         {removable && hasAbility(option, 'removable') ? (
           <a data-tooltip={__('Select.clear')} data-position="left">
             <Icon

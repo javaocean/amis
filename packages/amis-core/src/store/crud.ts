@@ -58,8 +58,8 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
       return extendObject(self.data, {
         ...self.query,
         ...self.data,
-        selectedItems: self.selectedItems,
-        unSelectedItems: self.unSelectedItems
+        selectedItems: self.selectedItems.concat(),
+        unSelectedItems: self.unSelectedItems.concat()
       });
     },
 
@@ -164,13 +164,15 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
           if (Array.isArray(options.columns)) {
             options.columns.forEach((column: any) => {
               let value: any;
+              // 兼容新老版本的name和key
+              const key = column.name || column.key;
               if (
                 column.searchable &&
-                column.name &&
-                (value = getVariable(self.query, column.name))
+                key &&
+                (value = getVariable(self.query, key))
               ) {
                 items = matchSorter(items, value, {
-                  keys: [column.name]
+                  keys: [key]
                 });
               }
             });
@@ -308,13 +310,14 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
             if (Array.isArray(options.columns)) {
               options.columns.forEach((column: any) => {
                 let value: any;
+                const key = column.name || column.key;
                 if (
                   column.searchable &&
-                  column.name &&
-                  (value = getVariable(self.query, column.name))
+                  key &&
+                  (value = getVariable(self.query, key))
                 ) {
                   filteredItems = matchSorter(filteredItems, value, {
-                    keys: [column.name]
+                    keys: [key]
                   });
                 }
               });
@@ -334,7 +337,7 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
           if (Array.isArray(columns)) {
             self.columns = columns.concat();
           } else {
-            self.columns = undefined;
+            self.columns = options.columns;
           }
 
           self.items.replace(rowsData);
@@ -486,6 +489,16 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
       self.unSelectedItems.replace(items);
     };
 
+    const updateSelectData = (selected: Array<any>, unSelected: Array<any>) => {
+      self.selectedItems.replace(selected);
+      self.unSelectedItems.replace(unSelected);
+      // 同步到data中，使filter等部分也能拿到
+      self.reInitData({
+        selectedItems: selected,
+        unSelectedItems: unSelected
+      });
+    };
+
     const setInnerModalOpened = (value: boolean) => {
       self.hasInnerModalOpen = value;
     };
@@ -507,7 +520,7 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
         ...self.pristine,
         items: rowsData,
         count: 0,
-        total: 0
+        total: rowsData.length
       };
 
       self.items.replace(rowsData);
@@ -547,7 +560,23 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
       });
     };
 
+    const getData = (superData: any): any => {
+      return createObject(superData, {
+        total: self.total,
+        page: self.page,
+        items: self.items.concat(),
+        selectedItems: self.selectedItems.concat(),
+        unSelectedItems: self.unSelectedItems.concat()
+      });
+    };
+
+    const updateColumns = (columns: Array<any>) => {
+      self.columns = columns;
+    };
+
     return {
+      getData,
+      updateSelectData,
       setPristineQuery,
       updateQuery,
       fetchInitData,
@@ -560,7 +589,8 @@ export const CRUDStore = ServiceStore.named('CRUDStore')
       setUnSelectedItems,
       setInnerModalOpened,
       initFromScope,
-      exportAsCSV
+      exportAsCSV,
+      updateColumns
     };
   });
 
